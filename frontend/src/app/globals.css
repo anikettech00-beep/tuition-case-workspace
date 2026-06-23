@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* Define a CSS variable for the sans font using a system font stack */
+:root {
+  --font-sans: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+body {
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+input, select, textarea, button {
+  font-family: inherit;
+}

@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build files
+dist/
+.next/
+out/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Uploads
+uploads/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# Prisma
+prisma/dev.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+docker-compose.yaml
+.dockerignore

@@ -21,7 +21,37 @@ const loginSchema = z.object({
 
 const resetSchema = z.object({ token: z.string().min(1), password: z.string().min(8) });
 
-//To create a user
+/**
+ * @openapi
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password, name, role]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [PARENT, TUTOR]
+ *     responses:
+ *       '201':
+ *         description: Created user and session token
+ *       '400':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.post('/register', async (req: AuthRequest, res: Response, next) => {
   try {
     const input = registerSchema.parse(req.body);
@@ -33,7 +63,32 @@ router.post('/register', async (req: AuthRequest, res: Response, next) => {
   }
 });
 
-//For user login
+/**
+ * @openapi
+ * /api/auth/login:
+ *   post:
+ *     summary: Log in a user
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *     responses:
+ *       '200':
+ *         description: Authenticated user and session token
+ *       '400':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.post('/login', async (req: AuthRequest, res: Response, next) => {
   try {
     const input = loginSchema.parse(req.body);
@@ -45,18 +100,71 @@ router.post('/login', async (req: AuthRequest, res: Response, next) => {
   }
 });
 
-//Logged out current user
+/**
+ * @openapi
+ * /api/auth/logout:
+ *   post:
+ *     summary: Log out current user (clear session cookie)
+ *     tags:
+ *       - Auth
+ *     responses:
+ *       '200':
+ *         description: Logged out
+ */
 router.post('/logout', (_req, res) => {
   res.clearCookie(COOKIE_NAME, { path: '/' });
   res.json({ message: 'Logged out' });
 });
 
-//    summary: Get current authenticated user
+/**
+ * @openapi
+ * /api/auth/me:
+ *   get:
+ *     summary: Get current authenticated user
+ *     tags:
+ *       - Auth
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Current user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       '401':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.get('/me', requireAuth, (req: AuthRequest, res) => {
   res.json({ user: req.user });
 });
 
-// Send a password reset link to the user's email
+/**
+ * @openapi
+ * /api/auth/forgot:
+ *   post:
+ *     summary: Request a password reset link
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       '200':
+ *         description: Password reset email queued (always returns success)
+ */
 router.post('/forgot', async (req: AuthRequest, res: Response, next) => {
   try {
     const input = z.object({ email: z.string().trim().email() }).parse(req.body);
@@ -68,7 +176,31 @@ router.post('/forgot', async (req: AuthRequest, res: Response, next) => {
   }
 });
 
-// Reset the user's password
+/**
+ * @openapi
+ * /api/auth/reset:
+ *   post:
+ *     summary: Reset password using token
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, password]
+ *             properties:
+ *               token:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       '200':
+ *         description: Password reset successful
+ *       '400':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.post('/reset', async (req: AuthRequest, res: Response, next) => {
   try {
     const input = resetSchema.parse(req.body);

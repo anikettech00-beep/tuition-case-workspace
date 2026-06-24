@@ -37,7 +37,33 @@ const upload = multer({
   limits: { fileSize: env.MAX_FILE_SIZE_MB * 1024 * 1024 },
 });
 
-// Browse tutor directory (parents only)
+/**
+ * @openapi
+ * /api/tutors:
+ *   get:
+ *     summary: Browse tutor directory (parents only)
+ *     tags:
+ *       - Tutors
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: List of tutor profiles with pagination
+ */
 router.get('/', requireAuth, requireRole(Role.PARENT), async (req: AuthRequest, res: Response, next) => {
   try {
     const query = listTutorsSchema.parse(req.query);
@@ -75,7 +101,22 @@ router.get('/', requireAuth, requireRole(Role.PARENT), async (req: AuthRequest, 
   }
 });
 
-// Get own tutor profile
+/**
+ * @openapi
+ * /api/tutors/me:
+ *   get:
+ *     summary: Get own tutor profile
+ *     tags:
+ *       - Tutors
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Tutor profile
+ *       '401':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.get('/me', requireAuth, requireRole(Role.TUTOR), async (req: AuthRequest, res: Response, next) => {
   try {
     const profile = await prisma.tutorProfile.findUnique({
@@ -101,7 +142,36 @@ router.get('/me', requireAuth, requireRole(Role.TUTOR), async (req: AuthRequest,
   }
 });
 
-// Create or update own tutor profile
+/**
+ * @openapi
+ * /api/tutors/me:
+ *   put:
+ *     summary: Create or update own tutor profile
+ *     tags:
+ *       - Tutors
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [displayName]
+ *             properties:
+ *               displayName:
+ *                 type: string
+ *               qualifications:
+ *                 type: string
+ *               experiences:
+ *                 type: string
+ *     responses:
+ *       '200':
+ *         description: Upserted tutor profile
+ *       '400':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.put('/me', requireAuth, requireRole(Role.TUTOR), async (req: AuthRequest, res: Response, next) => {
   try {
     const input = profileSchema.parse(req.body);
@@ -121,7 +191,32 @@ router.put('/me', requireAuth, requireRole(Role.TUTOR), async (req: AuthRequest,
   }
 });
 
-// Upload document to own tutor profile
+/**
+ * @openapi
+ * /api/tutors/me/documents:
+ *   post:
+ *     summary: Upload document to own tutor profile
+ *     tags:
+ *       - Tutors
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       '201':
+ *         description: Document uploaded
+ *       '400':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.post('/me/documents', requireAuth, requireRole(Role.TUTOR), upload.single('file'), async (req: AuthRequest, res: Response, next) => {
   try {
     if (!req.file) throw new AppError(400, 'No file uploaded', 'NO_FILE');
@@ -172,7 +267,28 @@ router.post('/me/documents', requireAuth, requireRole(Role.TUTOR), upload.single
   }
 });
 
-//View tutor profile (parents or owning tutor)
+/**
+ * @openapi
+ * /api/tutors/{userId}:
+ *   get:
+ *     summary: View tutor profile (parents or owning tutor)
+ *     tags:
+ *       - Tutors
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Tutor profile
+ *       '404':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.get('/:userId', requireAuth, async (req: AuthRequest, res: Response, next) => {
   try {
     const userId = paramId(req.params.userId);

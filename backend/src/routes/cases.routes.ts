@@ -29,7 +29,42 @@ const listCasesSchema = paginationSchema.extend({
   status: z.nativeEnum(CaseStatus).optional(),
 });
 
-// Create a tuition case (parent only)
+const inviteSchema = z.object({ tutorId: z.string().uuid() });
+
+/**
+ * @openapi
+ * /api/cases:
+ *   post:
+ *     summary: Create a tuition case (parents only)
+ *     tags:
+ *       - Cases
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title, subject, level, budgetPerHour]
+ *             properties:
+ *               title:
+ *                 type: string
+ *               subject:
+ *                 type: string
+ *               level:
+ *                 type: string
+ *               location:
+ *                 type: string
+ *               budgetPerHour:
+ *                 type: number
+ *     responses:
+ *       '201':
+ *         description: Created case
+ *       '400':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.post('/', requireAuth, requireRole(Role.PARENT), async (req: AuthRequest, res: Response, next) => {
   try {
     const input = createCaseSchema.parse(req.body);
@@ -43,7 +78,46 @@ router.post('/', requireAuth, requireRole(Role.PARENT), async (req: AuthRequest,
   }
 });
 
-// List cases visible to current user
+/**
+ * @openapi
+ * /api/cases:
+ *   get:
+ *     summary: List cases visible to current user
+ *     tags:
+ *       - Cases
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: subject
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: level
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [OPEN, MATCHED, CLOSED]
+ *     responses:
+ *       '200':
+ *         description: List of cases with pagination
+ */
 router.get('/', requireAuth, async (req: AuthRequest, res: Response, next) => {
   try {
     const query = listCasesSchema.parse(req.query);
@@ -89,7 +163,28 @@ router.get('/', requireAuth, async (req: AuthRequest, res: Response, next) => {
   }
 });
 
-// Get case by ID (authorized users only)
+/**
+ * @openapi
+ * /api/cases/{id}:
+ *   get:
+ *     summary: Get case by ID (authorized users only)
+ *     tags:
+ *       - Cases
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Case details
+ *       '404':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.get('/:id', requireAuth, async (req: AuthRequest, res: Response, next) => {
   try {
     const id = paramId(req.params.id);
@@ -121,7 +216,48 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response, next) =>
   }
 });
 
-// Update case (owner only)
+/**
+ * @openapi
+ * /api/cases/{id}:
+ *   patch:
+ *     summary: Update case (owner only)
+ *     tags:
+ *       - Cases
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               subject:
+ *                 type: string
+ *               level:
+ *                 type: string
+ *               location:
+ *                 type: string
+ *               budgetPerHour:
+ *                 type: number
+ *               status:
+ *                 type: string
+ *                 enum: [OPEN, MATCHED, CLOSED]
+ *     responses:
+ *       '200':
+ *         description: Updated case
+ *       '400':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.patch('/:id', requireAuth, requireRole(Role.PARENT), async (req: AuthRequest, res: Response, next) => {
   try {
     const id = paramId(req.params.id);
@@ -137,9 +273,38 @@ router.patch('/:id', requireAuth, requireRole(Role.PARENT), async (req: AuthRequ
   }
 });
 
-const inviteSchema = z.object({ tutorId: z.string().uuid() });
-
-//Invite a tutor to a case (owner only)
+/**
+ * @openapi
+ * /api/cases/{id}/invitations:
+ *   post:
+ *     summary: Invite a tutor to a case (owner only)
+ *     tags:
+ *       - Cases
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tutorId]
+ *             properties:
+ *               tutorId:
+ *                 type: string
+ *     responses:
+ *       '201':
+ *         description: Invitation created
+ *       '400':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.post('/:id/invitations', requireAuth, requireRole(Role.PARENT), async (req: AuthRequest, res: Response, next) => {
   try {
     const id = paramId(req.params.id);
@@ -164,7 +329,33 @@ router.post('/:id/invitations', requireAuth, requireRole(Role.PARENT), async (re
   }
 });
 
-//Revoke tutor access to a case (owner only)
+/**
+ * @openapi
+ * /api/cases/{id}/invitations/{tutorId}:
+ *   delete:
+ *     summary: Revoke tutor access to a case (owner only)
+ *     tags:
+ *       - Cases
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: tutorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Access revoked
+ *       '404':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.delete('/:id/invitations/:tutorId', requireAuth, requireRole(Role.PARENT), async (req: AuthRequest, res: Response, next) => {
   try {
     const id = paramId(req.params.id);

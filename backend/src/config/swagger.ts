@@ -1,5 +1,6 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 import { env } from '../config/env';
+import path from 'path';
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -63,7 +64,9 @@ const options: swaggerJsdoc.Options = {
     },
     security: [{ cookieAuth: [] }, { bearerAuth: [] }],
   },
-  apis: ['./src/routes/*.ts'],
+  // resolve route files relative to this file so swagger-jsdoc finds them
+  // include both TS and JS outputs so docs load in dev and after build
+  apis: [path.resolve(__dirname, '../routes/*.ts'), path.resolve(__dirname, '../routes/*.js')],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);

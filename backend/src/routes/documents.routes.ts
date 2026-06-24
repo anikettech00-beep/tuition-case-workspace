@@ -25,7 +25,38 @@ const upload = multer({
   limits: { fileSize: env.MAX_FILE_SIZE_MB * 1024 * 1024 },
 });
 
-//Upload a document to a case
+/**
+ * @openapi
+ * /api/cases/{caseId}/documents:
+ *   post:
+ *     summary: Upload a document to a case
+ *     tags:
+ *       - Documents
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: caseId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       '201':
+ *         description: Document uploaded
+ *       '400':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.post('/cases/:caseId/documents', requireAuth, upload.single('file'), async (req: AuthRequest, res: Response, next) => {
   try {
     const caseId = paramId(req.params.caseId);
@@ -71,7 +102,28 @@ router.post('/cases/:caseId/documents', requireAuth, upload.single('file'), asyn
   }
 });
 
-//List documents for a case
+/**
+ * @openapi
+ * /api/cases/{caseId}/documents:
+ *   get:
+ *     summary: List documents for a case
+ *     tags:
+ *       - Documents
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: caseId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Documents list
+ *       '404':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.get('/cases/:caseId/documents', requireAuth, async (req: AuthRequest, res: Response, next) => {
   try {
     const caseId = paramId(req.params.caseId);
@@ -95,7 +147,28 @@ router.get('/cases/:caseId/documents', requireAuth, async (req: AuthRequest, res
   }
 });
 
-// Download a document (re-checks authorization)
+/**
+ * @openapi
+ * /api/documents/{id}/download:
+ *   get:
+ *     summary: Download a document (re-checks authorization)
+ *     tags:
+ *       - Documents
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: File download
+ *       '404':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.get('/documents/:id/download', requireAuth, async (req: AuthRequest, res: Response, next) => {
   try {
     const docId = paramId(req.params.id);
@@ -119,14 +192,35 @@ router.get('/documents/:id/download', requireAuth, async (req: AuthRequest, res:
 
     const filePath = getFilePath(document.storedFilename);
     res.setHeader('Content-Type', document.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${document.originalFilename}"`);
+    res.setHeader('Content-Disposition', `attachment; filename=\"${document.originalFilename}\"`);
     res.sendFile(path.resolve(filePath));
   } catch (e) {
     next(e);
   }
 });
 
-//Delete a document (uploader or case owner)
+/**
+ * @openapi
+ * /api/documents/{id}:
+ *   delete:
+ *     summary: Delete a document (uploader or case/profile owner)
+ *     tags:
+ *       - Documents
+ *     security:
+ *       - cookieAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Document deleted
+ *       '403':
+ *         $ref: '#/components/schemas/Error'
+ */
 router.delete('/documents/:id', requireAuth, async (req: AuthRequest, res: Response, next) => {
   try {
     const docId = paramId(req.params.id);

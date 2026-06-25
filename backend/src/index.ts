@@ -19,7 +19,7 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 const allowedOrigins = [
   env.FRONTEND_URL,
   ...(process.env.NODE_ENV !== 'production'
-    ? ['http://localhost:3000', 'http://localhost:3001']
+    ? ['http://localhost:3000', 'http://localhost:3001','https://tuition-case-workspace-production.up.railway.app']
     : []),
 ];
 app.use(cors({

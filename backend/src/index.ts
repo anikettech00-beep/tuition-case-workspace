@@ -14,6 +14,7 @@ import documentsRoutes from './routes/documents.routes';
 import tutorsRoutes from './routes/tutors.routes';
 
 const app = express();
+app.set('trust proxy', 1);
 
 app.use(
   cors({

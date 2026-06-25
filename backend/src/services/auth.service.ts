@@ -26,9 +26,18 @@ async function sendResetEmail(to: string, link: string) {
     const transporter = nodemailer.createTransport({
       host: env.SMTP_HOST,
       port: env.SMTP_PORT ?? 587,
-      secure: (env.SMTP_PORT ?? 587) === 465,
-      auth: env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASS } : undefined,
+      secure: false,
+      auth: {
+        user: env.SMTP_USER,
+        pass: env.SMTP_PASS,
+      },
+      connectionTimeout: 30000,
+      greetingTimeout: 30000,
+      socketTimeout: 30000,
     } as any);
+
+    await transporter.verify();
+    console.log('SMTP connection successful');
 
     const from = env.SMTP_FROM ?? `no-reply@${new URL(env.FRONTEND_URL).hostname}`;
 

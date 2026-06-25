@@ -36,11 +36,6 @@ async function sendResetEmail(to: string, link: string) {
       socketTimeout: 30000,
     } as any);
 
-    console.log('Verifying SMTP connection...');
-
-    await transporter.verify();
-
-    console.log('SMTP connection successful');
   
 
     const from = env.SMTP_FROM ?? `no-reply@${new URL(env.FRONTEND_URL).hostname}`;

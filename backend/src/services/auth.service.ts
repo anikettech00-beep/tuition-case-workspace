@@ -10,91 +10,6 @@ import nodemailer from 'nodemailer';
 
 const SALT_ROUNDS = 12;
 
-// async function sendResetEmail(to: string, link: string) {
-//   const isProduction = env.NODE_ENV === 'production';
-
-//   if (isProduction && (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS || !env.SMTP_FROM)) {
-//     throw new AppError(
-//       500,
-//       'Password reset email service is not configured',
-//       'EMAIL_NOT_CONFIGURED',
-//     );
-//   }
-
-//   // If SMTP is configured, use it. Otherwise fall back to logging/dev email only outside production.
-//   if (env.SMTP_HOST) {
-//     const transporter = nodemailer.createTransport({
-//       host: env.SMTP_HOST,
-//       port: Number(env.SMTP_PORT) || 587,
-//       secure: false,
-//       auth: {
-//         user: env.SMTP_USER,
-//         pass: env.SMTP_PASS,
-//       },
-//       connectionTimeout: 30000,
-//       greetingTimeout: 30000,
-//       socketTimeout: 30000,
-//     } as any);
-
-  
-
-//     const from = env.SMTP_FROM ?? `no-reply@${new URL(env.FRONTEND_URL).hostname}`;
-
-//     try {
-//       const info = await transporter.sendMail({
-//         from,
-//         to,
-//         subject: 'Reset your TuitionCase password',
-//         text: `Reset your password using the following link: ${link}\n\nIf you did not request a password reset, you can ignore this email.`,
-//         html: `<p>Reset your password using the following link:</p><p><a href="${link}">${link}</a></p><p>If you did not request a password reset, you can ignore this email.</p>`,
-//       });
-//       console.log(`Password reset email sent to ${to}`);
-//       // If using a service that provides a preview URL (like Ethereal), log it
-//       try {
-//         const preview = (nodemailer as any).getTestMessageUrl(info);
-//         if (preview) console.log(`Preview URL: ${preview}`);
-//       } catch (e) {
-//         // ignore
-//       }
-//     } catch (err) {
-//       console.error('Failed to send reset email via SMTP:', err);
-//       throw new AppError(
-//         502,
-//         'Failed to send password reset email',
-//         'EMAIL_SEND_FAILED',
-//       );
-//     }
-
-//     return;
-//   }
-
-//   // No SMTP configured: create a test account and send via Ethereal for development.
-//   try {
-//     const testAccount = await nodemailer.createTestAccount();
-//     const transporter = nodemailer.createTransport({
-//       host: testAccount.smtp.host,
-//       port: testAccount.smtp.port,
-//       secure: testAccount.smtp.secure,
-//       auth: { user: testAccount.user, pass: testAccount.pass },
-//     } as any);
-
-//     const from = `no-reply@${new URL(env.FRONTEND_URL).hostname}`;
-//     const info = await transporter.sendMail({
-//       from,
-//       to,
-//       subject: 'Reset your TuitionCase password (Ethereal)',
-//       text: `Reset your password using the following link: ${link}\n\nIf you did not request a password reset, you can ignore this email.`,
-//       html: `<p>Reset your password using the following link:</p><p><a href="${link}">${link}</a></p>`,
-//     });
-
-//     const preview = (nodemailer as any).getTestMessageUrl(info);
-//     console.log('Sent reset email using Ethereal dev account. Preview URL:', preview);
-//     console.log(`Password reset link: ${link}`);
-//   } catch (err) {
-//     console.error('Failed to send reset email (ethereal):', err);
-//     console.log(`Password reset link (fallback): ${link}`);
-//   }
-// }
 async function sendResetEmail(to: string, link: string) {
   if (env.NODE_ENV === 'production' && 
       (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS || !env.SMTP_FROM)) {
@@ -188,29 +103,6 @@ export async function loginUser(email: string, password: string) {
   };
 }
 
-// export async function createPasswordResetToken(email: string) {
-//   const normalizedEmail = email.trim().toLowerCase();
-//   const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-//   if (!user) {
-//     // Do not reveal whether the email exists.
-//     return null;
-//   }
-
-//   const token = crypto.randomBytes(32).toString('hex');
-//   const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-
-//   await prisma.user.update({ where: { id: user.id }, data: { resetToken: token, resetTokenExpiresAt: expiresAt } as any });
-
-//   const link = `${env.FRONTEND_URL}/reset/${token}`;
-
-//   // Send email if SMTP configured, otherwise log link for dev use.
-//   await sendResetEmail(user.email, link);
-
-//   // Also log link for demo / developer use.
-//   console.log(`Password reset link: ${link}`);
-
-//   return token;
-// }
 export async function createPasswordResetToken(email: string) {
   const normalizedEmail = email.trim().toLowerCase();
 

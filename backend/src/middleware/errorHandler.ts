@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { AppError } from '../lib/errors';
 import { env } from '../config/env';
+import { Prisma } from '@prisma/client';
 
 /**
  * Global error handler — never leaks stack traces in production.
@@ -38,10 +39,31 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     return;
   }
 
+  // Map Prisma client errors to friendly API responses
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    // Common Prisma error codes: P2002 (unique constraint), P2025 (not found)
+    if (err.code === 'P2002') {
+      res.status(409).json({ error: { message: 'Conflict: resource already exists', code: 'DUPLICATE_RECORD' } });
+      console.error('Prisma P2002:', err.meta ?? err.message);
+      return;
+    }
+    if (err.code === 'P2025') {
+      res.status(404).json({ error: { message: 'Resource not found', code: 'NOT_FOUND' } });
+      console.error('Prisma P2025:', err.meta ?? err.message);
+      return;
+    }
+
+    // Fallback for other known request errors
+    res.status(500).json({ error: { message: 'Database error', code: 'DATABASE_ERROR' } });
+    console.error('Prisma KnownRequestError:', err);
+    return;
+  }
+
+  // Unexpected/unhandled errors: never return internal exception messages to the client
   console.error('Unhandled error:', err);
   res.status(500).json({
     error: {
-      message: env.NODE_ENV === 'production' ? 'Internal server error' : (err as Error)?.message ?? 'Internal server error',
+      message: 'Internal server error',
       code: 'INTERNAL_ERROR',
     },
   });

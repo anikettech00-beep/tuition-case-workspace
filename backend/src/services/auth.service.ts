@@ -25,7 +25,7 @@ async function sendResetEmail(to: string, link: string) {
   if (env.SMTP_HOST) {
     const transporter = nodemailer.createTransport({
       host: env.SMTP_HOST,
-      port: env.SMTP_PORT ?? 587,
+      port: Number(env.SMTP_PORT) || 587,
       secure: false,
       auth: {
         user: env.SMTP_USER,
@@ -138,30 +138,64 @@ export async function loginUser(email: string, password: string) {
   };
 }
 
+// export async function createPasswordResetToken(email: string) {
+//   const normalizedEmail = email.trim().toLowerCase();
+//   const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+//   if (!user) {
+//     // Do not reveal whether the email exists.
+//     return null;
+//   }
+
+//   const token = crypto.randomBytes(32).toString('hex');
+//   const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+//   await prisma.user.update({ where: { id: user.id }, data: { resetToken: token, resetTokenExpiresAt: expiresAt } as any });
+
+//   const link = `${env.FRONTEND_URL}/reset/${token}`;
+
+//   // Send email if SMTP configured, otherwise log link for dev use.
+//   await sendResetEmail(user.email, link);
+
+//   // Also log link for demo / developer use.
+//   console.log(`Password reset link: ${link}`);
+
+//   return token;
+// }
 export async function createPasswordResetToken(email: string) {
   const normalizedEmail = email.trim().toLowerCase();
-  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+
+  const user = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+  });
+
   if (!user) {
-    // Do not reveal whether the email exists.
     return null;
   }
 
   const token = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-  await prisma.user.update({ where: { id: user.id }, data: { resetToken: token, resetTokenExpiresAt: expiresAt } as any });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      resetToken: token,
+      resetTokenExpiresAt: expiresAt,
+    } as any,
+  });
 
   const link = `${env.FRONTEND_URL}/reset/${token}`;
 
-  // Send email if SMTP configured, otherwise log link for dev use.
-  await sendResetEmail(user.email, link);
+  console.log('RESET LINK:', link);
 
-  // Also log link for demo / developer use.
-  console.log(`Password reset link: ${link}`);
+  try {
+    await sendResetEmail(user.email, link);
+    console.log('Reset email sent successfully');
+  } catch (err) {
+    console.error('Email failed:', err);
+  }
 
   return token;
 }
-
 export async function resetPassword(token: string, newPassword: string) {
   const user = await prisma.user.findFirst({ where: { resetToken: token, resetTokenExpiresAt: { gt: new Date() } } as any });
   if (!user) {

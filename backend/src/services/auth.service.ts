@@ -10,92 +10,142 @@ import nodemailer from 'nodemailer';
 
 const SALT_ROUNDS = 12;
 
-async function sendResetEmail(to: string, link: string) {
-  const isProduction = env.NODE_ENV === 'production';
+// async function sendResetEmail(to: string, link: string) {
+//   const isProduction = env.NODE_ENV === 'production';
 
-  if (isProduction && (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS || !env.SMTP_FROM)) {
-    throw new AppError(
-      500,
-      'Password reset email service is not configured',
-      'EMAIL_NOT_CONFIGURED',
-    );
-  }
+//   if (isProduction && (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS || !env.SMTP_FROM)) {
+//     throw new AppError(
+//       500,
+//       'Password reset email service is not configured',
+//       'EMAIL_NOT_CONFIGURED',
+//     );
+//   }
 
-  // If SMTP is configured, use it. Otherwise fall back to logging/dev email only outside production.
-  if (env.SMTP_HOST) {
-    const transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: Number(env.SMTP_PORT) || 587,
-      secure: false,
-      auth: {
-        user: env.SMTP_USER,
-        pass: env.SMTP_PASS,
-      },
-      connectionTimeout: 30000,
-      greetingTimeout: 30000,
-      socketTimeout: 30000,
-    } as any);
+//   // If SMTP is configured, use it. Otherwise fall back to logging/dev email only outside production.
+//   if (env.SMTP_HOST) {
+//     const transporter = nodemailer.createTransport({
+//       host: env.SMTP_HOST,
+//       port: Number(env.SMTP_PORT) || 587,
+//       secure: false,
+//       auth: {
+//         user: env.SMTP_USER,
+//         pass: env.SMTP_PASS,
+//       },
+//       connectionTimeout: 30000,
+//       greetingTimeout: 30000,
+//       socketTimeout: 30000,
+//     } as any);
 
   
 
-    const from = env.SMTP_FROM ?? `no-reply@${new URL(env.FRONTEND_URL).hostname}`;
+//     const from = env.SMTP_FROM ?? `no-reply@${new URL(env.FRONTEND_URL).hostname}`;
 
-    try {
-      const info = await transporter.sendMail({
-        from,
-        to,
-        subject: 'Reset your TuitionCase password',
-        text: `Reset your password using the following link: ${link}\n\nIf you did not request a password reset, you can ignore this email.`,
-        html: `<p>Reset your password using the following link:</p><p><a href="${link}">${link}</a></p><p>If you did not request a password reset, you can ignore this email.</p>`,
-      });
-      console.log(`Password reset email sent to ${to}`);
-      // If using a service that provides a preview URL (like Ethereal), log it
-      try {
-        const preview = (nodemailer as any).getTestMessageUrl(info);
-        if (preview) console.log(`Preview URL: ${preview}`);
-      } catch (e) {
-        // ignore
-      }
-    } catch (err) {
-      console.error('Failed to send reset email via SMTP:', err);
-      throw new AppError(
-        502,
-        'Failed to send password reset email',
-        'EMAIL_SEND_FAILED',
-      );
-    }
+//     try {
+//       const info = await transporter.sendMail({
+//         from,
+//         to,
+//         subject: 'Reset your TuitionCase password',
+//         text: `Reset your password using the following link: ${link}\n\nIf you did not request a password reset, you can ignore this email.`,
+//         html: `<p>Reset your password using the following link:</p><p><a href="${link}">${link}</a></p><p>If you did not request a password reset, you can ignore this email.</p>`,
+//       });
+//       console.log(`Password reset email sent to ${to}`);
+//       // If using a service that provides a preview URL (like Ethereal), log it
+//       try {
+//         const preview = (nodemailer as any).getTestMessageUrl(info);
+//         if (preview) console.log(`Preview URL: ${preview}`);
+//       } catch (e) {
+//         // ignore
+//       }
+//     } catch (err) {
+//       console.error('Failed to send reset email via SMTP:', err);
+//       throw new AppError(
+//         502,
+//         'Failed to send password reset email',
+//         'EMAIL_SEND_FAILED',
+//       );
+//     }
 
+//     return;
+//   }
+
+//   // No SMTP configured: create a test account and send via Ethereal for development.
+//   try {
+//     const testAccount = await nodemailer.createTestAccount();
+//     const transporter = nodemailer.createTransport({
+//       host: testAccount.smtp.host,
+//       port: testAccount.smtp.port,
+//       secure: testAccount.smtp.secure,
+//       auth: { user: testAccount.user, pass: testAccount.pass },
+//     } as any);
+
+//     const from = `no-reply@${new URL(env.FRONTEND_URL).hostname}`;
+//     const info = await transporter.sendMail({
+//       from,
+//       to,
+//       subject: 'Reset your TuitionCase password (Ethereal)',
+//       text: `Reset your password using the following link: ${link}\n\nIf you did not request a password reset, you can ignore this email.`,
+//       html: `<p>Reset your password using the following link:</p><p><a href="${link}">${link}</a></p>`,
+//     });
+
+//     const preview = (nodemailer as any).getTestMessageUrl(info);
+//     console.log('Sent reset email using Ethereal dev account. Preview URL:', preview);
+//     console.log(`Password reset link: ${link}`);
+//   } catch (err) {
+//     console.error('Failed to send reset email (ethereal):', err);
+//     console.log(`Password reset link (fallback): ${link}`);
+//   }
+// }
+async function sendResetEmail(to: string, link: string) {
+  if (env.NODE_ENV === 'production' && 
+      (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS || !env.SMTP_FROM)) {
+    console.warn('SMTP not fully configured, skipping email');
     return;
   }
 
-  // No SMTP configured: create a test account and send via Ethereal for development.
-  try {
-    const testAccount = await nodemailer.createTestAccount();
-    const transporter = nodemailer.createTransport({
-      host: testAccount.smtp.host,
-      port: testAccount.smtp.port,
-      secure: testAccount.smtp.secure,
-      auth: { user: testAccount.user, pass: testAccount.pass },
-    } as any);
+  const transporter = nodemailer.createTransport({
+    host: env.SMTP_HOST,
+    port: Number(env.SMTP_PORT) || 587,
+    secure: false,                    // MUST be false for port 587
+    requireTLS: true,
+    auth: {
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASS,
+    },
+    connectionTimeout: 60000,
+    greetingTimeout: 30000,
+    socketTimeout: 120000,
+    debug: true,
+    logger: true,
+  });
 
-    const from = `no-reply@${new URL(env.FRONTEND_URL).hostname}`;
+  const from = env.SMTP_FROM || `no-reply@${new URL(env.FRONTEND_URL).hostname}`;
+
+  try {
     const info = await transporter.sendMail({
       from,
       to,
-      subject: 'Reset your TuitionCase password (Ethereal)',
-      text: `Reset your password using the following link: ${link}\n\nIf you did not request a password reset, you can ignore this email.`,
-      html: `<p>Reset your password using the following link:</p><p><a href="${link}">${link}</a></p>`,
+      subject: 'Reset your TuitionCase password',
+      text: `Reset your password: ${link}\n\nIf you didn't request this, ignore this email.`,
+      html: `
+        <div style="font-family: Arial; padding: 20px;">
+          <h2>Password Reset</h2>
+          <p>Click the link below to reset your password:</p>
+          <p><a href="${link}" style="color: #6366f1; font-size: 18px;">Reset My Password</a></p>
+          <p style="color: #666;">If you did not request a password reset, you can safely ignore this email.</p>
+        </div>
+      `,
     });
 
-    const preview = (nodemailer as any).getTestMessageUrl(info);
-    console.log('Sent reset email using Ethereal dev account. Preview URL:', preview);
-    console.log(`Password reset link: ${link}`);
-  } catch (err) {
-    console.error('Failed to send reset email (ethereal):', err);
-    console.log(`Password reset link (fallback): ${link}`);
+    console.log(`✅ Email sent successfully to ${to}`);
+    console.log(`Message ID: ${info.messageId}`);
+  } catch (err: any) {
+    console.error('❌ SMTP Error:', err.code, err.message);
+    if (err.code === 'ETIMEDOUT') {
+      console.error('Connection timeout - Check Railway outbound connection or firewall');
+    }
+    throw new AppError(502, 'Failed to send password reset email', 'EMAIL_SEND_FAILED');
   }
 }
-
 export async function registerUser(input: {
   email: string;
   password: string;

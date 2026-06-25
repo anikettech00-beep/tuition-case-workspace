@@ -23,17 +23,17 @@ app.use(
         return callback(null, true);
       }
 
-      // Allow localhost
+      // Local development
       if (origin.startsWith('http://localhost:')) {
         return callback(null, true);
       }
 
-      // Allow all Vercel deployments
+      // All Vercel deployments (preview + production)
       if (origin.endsWith('.vercel.app')) {
         return callback(null, true);
       }
 
-      return callback(null, false);
+      return callback(new Error(`CORS blocked: ${origin}`));
     },
     credentials: true,
   })
